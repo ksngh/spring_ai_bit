@@ -42,7 +42,7 @@ class UpbitClient {
 
     suspend fun getCurrent5MinutesData(): List<UpbitCandleResponse> {
         return webClient.get()
-            .uri("/v1/candles/minutes/5?market=KRW-BTC&count=288")
+            .uri("/v1/candles/minutes/1?market=KRW-BTC&count=300")
             .retrieve()
             .bodyToTypedMono<List<UpbitCandleResponse>>()
             .awaitSingle()

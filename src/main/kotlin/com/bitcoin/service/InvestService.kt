@@ -23,7 +23,7 @@ class InvestService(
     private val upbitPrompt: UpbitPrompt
 ) {
 
-    @Scheduled(cron = "0 0,30 * * * *")
+    @Scheduled(cron = "0 0,10,20,30,40,50 * * * *")
     suspend fun save5MinutesData(): String {
         val upbitData = upbitClient.getCurrent5MinutesData()
         val prompt = Prompt(listOf(UserMessage(upbitPrompt.createInvestPrompt() + upbitData)))
