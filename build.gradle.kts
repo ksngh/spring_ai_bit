@@ -35,6 +35,9 @@ dependencies {
 	testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
+	//blockhound
+	implementation("io.projectreactor.tools:blockhound:1.0.8.RELEASE")
+
 	//jwt
 	implementation("com.auth0:java-jwt:4.4.0")
 }
