@@ -1,4 +1,4 @@
-package com.bitcoin.dto
+package com.bitcoin.dto.response
 
 data class UpbitAccountResponse(
     val currency: String,

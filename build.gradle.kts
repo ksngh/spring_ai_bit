@@ -35,6 +35,9 @@ dependencies {
 	testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
+	//log
+	implementation("io.github.microutils:kotlin-logging-jvm:3.0.5")
+
 	//blockhound
 	implementation("io.projectreactor.tools:blockhound:1.0.8.RELEASE")
 

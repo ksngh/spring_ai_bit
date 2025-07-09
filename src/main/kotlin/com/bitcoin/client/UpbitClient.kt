@@ -2,9 +2,11 @@ package com.bitcoin.client
 
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
-import com.bitcoin.dto.UpbitAccountResponse
-import com.bitcoin.dto.UpbitCandleResponse
+import com.bitcoin.dto.response.UpbitAccountResponse
+import com.bitcoin.dto.response.UpbitCandleResponse
+import com.bitcoin.enums.MarketCode
 import kotlinx.coroutines.reactor.awaitSingle
+import mu.KotlinLogging
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.http.HttpHeaders
@@ -35,14 +37,32 @@ class UpbitClient {
     @Value("\${upbit.access-key}")
     private lateinit var accessKey: String
 
+    private val logger = KotlinLogging.logger {}
+
     private val webClient = WebClient.builder()
         .baseUrl("https://api.upbit.com")
         .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
         .build()
 
-    suspend fun getCurrent5MinutesData(): List<UpbitCandleResponse> {
+    suspend fun getCurrent1MinutesData(marketCode: MarketCode): List<UpbitCandleResponse> {
         return webClient.get()
-            .uri("/v1/candles/minutes/1?market=KRW-BTC&count=300")
+            .uri("/v1/candles/minutes/1?market=" + marketCode.ticker + "&count=300")
+            .retrieve()
+            .bodyToTypedMono<List<UpbitCandleResponse>>()
+            .awaitSingle()
+    }
+
+    suspend fun getCurrent5MinutesData(marketCode: MarketCode): List<UpbitCandleResponse> {
+        return webClient.get()
+            .uri("/v1/candles/minutes/5?market=" + marketCode.ticker + "&count=60")
+            .retrieve()
+            .bodyToTypedMono<List<UpbitCandleResponse>>()
+            .awaitSingle()
+    }
+
+    suspend fun getCurrent10MinutesData(marketCode: MarketCode): List<UpbitCandleResponse> {
+        return webClient.get()
+            .uri("/v1/candles/minutes/10?market=" + marketCode.ticker + "&count=30")
             .retrieve()
             .bodyToTypedMono<List<UpbitCandleResponse>>()
             .awaitSingle()
@@ -56,7 +76,7 @@ class UpbitClient {
             .retrieve()
             .bodyToMono<List<UpbitAccountResponse>>()
             .awaitSingle()
-
+        logger.info(response.toString())
         return response.find { it.currency == "KRW" }?.balance ?: "0.0"
     }
 
@@ -72,12 +92,12 @@ class UpbitClient {
         val price = flooredPrice.stripTrailingZeros().toPlainString()
 
         val params = mapOf(
-            "market" to "KRW-BTC",
+            "market" to MarketCode.CHRONOS.ticker,
             "ord_type" to "price",
             "price" to price,
             "side" to "bid"
         )
-        println("📦 [DEBUG] Body Params: $params")
+        logger.info("📦 [DEBUG] Body Params: $params")
         val headers = makeUpbitAuthHeader(params)
 
         return try {
@@ -99,17 +119,17 @@ class UpbitClient {
                 .bodyToMono(String::class.java)
                 .awaitSingle()
         } catch (e: WebClientResponseException) {
-            println("❗ HTTP 에러: ${e.statusCode} - ${e.responseBodyAsString}")
+            logger.info("❗ HTTP 에러: ${e.statusCode} - ${e.responseBodyAsString}")
             throw e
         } catch (e: Exception) {
-            println("❗ 예외 발생: ${e.message}")
+            logger.info("❗ 예외 발생: ${e.message}")
             throw e
         }
     }
 
     suspend fun sellAllBtc(): String {
         val params = linkedMapOf(
-            "market" to "KRW-BTC",
+            "market" to MarketCode.CHRONOS.ticker,
             "ord_type" to "market",        // 시장가
             "side" to "ask",               // 매도
             "volume" to getAvailableBtc()  // 보유 BTC 전부
@@ -117,15 +137,33 @@ class UpbitClient {
 
         val headers = makeUpbitAuthHeader(params)
 
-        val response = webClient.post()
-            .uri("/v1/orders")
-            .headers { it.setAll(headers) }
-            .bodyValue(params)
-            .retrieve()
-            .bodyToMono(String::class.java)
-            .awaitSingle()
 
-        return response
+        return try {
+            webClient.post()
+                .uri("/v1/orders")
+                .headers { it.setAll(headers) }
+                .bodyValue(params)
+                .retrieve()
+                .onStatus({ it.is4xxClientError }) { response ->
+                    response.bodyToMono(String::class.java).map { body ->
+                        throw RuntimeException("❌ 4xx 에러 발생: ${response.statusCode()} - $body")
+                    }
+                }
+                .onStatus({ it.is5xxServerError }) { response ->
+                    response.bodyToMono(String::class.java).map { body ->
+                        throw RuntimeException("❌ 5xx 서버 에러 발생: ${response.statusCode()} - $body")
+                    }
+                }
+                .bodyToMono(String::class.java)
+                .awaitSingle()
+        } catch (e: WebClientResponseException) {
+            logger.info("❗ HTTP 에러: ${e.statusCode} - ${e.responseBodyAsString}")
+            throw e
+        } catch (e: Exception) {
+            logger.info("❗ 예외 발생: ${e.message}")
+            throw e
+        }
+
     }
 
     suspend fun getAvailableBtc(): String {
@@ -137,8 +175,8 @@ class UpbitClient {
             .retrieve()
             .bodyToMono<List<UpbitAccountResponse>>()
             .awaitSingle()
-
-        return response.find { it.currency == "BTC" }?.balance ?: "0.0"
+        logger.info(response.find { it.currency == "KRW" }?.balance ?: "0.0")
+        return response.find { it.currency == "CRO" }?.balance ?: "0.0"
     }
 
     fun makeUpbitAuthHeader(params: Map<String, String>): Map<String, String> {
@@ -151,7 +189,7 @@ class UpbitClient {
             val queryString = params.entries
                 .sortedBy { it.key }
                 .joinToString("&") { "${it.key}=${it.value}" }
-            println("📦 [DEBUG] Body Params: $params")
+            logger.info("📦 [DEBUG] Body Params: $params")
             val digest = MessageDigest.getInstance("SHA-512")
                 .digest(queryString.toByteArray(StandardCharsets.UTF_8))
 

@@ -1,4 +1,4 @@
-package com.bitcoin.dto
+package com.bitcoin.dto.request
 
 data class UpbitOrderRequest(
     val market: String,

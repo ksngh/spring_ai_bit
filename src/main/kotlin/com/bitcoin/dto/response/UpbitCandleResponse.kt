@@ -1,4 +1,4 @@
-package com.bitcoin.dto
+package com.bitcoin.dto.response
 
 data class UpbitCandleResponse(
     val market: String,

@@ -7,12 +7,11 @@ import reactor.blockhound.BlockHound
 
 @SpringBootApplication
 @EnableScheduling
-class BitcoinApplication{
-	companion object {
-		@JvmStatic
-		fun main(args: Array<String>) {
-			BlockHound.install()
-			runApplication<BitcoinApplication>(*args)
-		}
-	}
+class BitcoinApplication {
+    companion object {
+        @JvmStatic
+        fun main(args: Array<String>) {
+            runApplication<BitcoinApplication>(*args)
+        }
+    }
 }
