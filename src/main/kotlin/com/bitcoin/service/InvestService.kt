@@ -12,6 +12,7 @@ import com.bitcoin.repository.InvestmentRepository
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import kotlinx.coroutines.*
+import kotlinx.coroutines.reactor.awaitSingle
 import mu.KotlinLogging
 import org.springframework.ai.chat.messages.UserMessage
 import org.springframework.ai.chat.model.ChatModel
@@ -40,11 +41,11 @@ class InvestService(
         val upbit5minData = upbitClient.getCurrentMinutesData(marketCode,5,60)
         val upbit10minData = upbitClient.getCurrentMinutesData(marketCode,10,30)
 
-        val currentPrice = upbitClient.getCurrentData()
+        val currentPrice = upbitClient.getCurrentData().first()
         val investmentActualLog = InvestmentActualLog(
             actualPrice = currentPrice.tradePrice
         )
-        investmentActualLogRepository.save(investmentActualLog)
+        investmentActualLogRepository.save(investmentActualLog).awaitSingle()
 
         // 2. 프롬프트 생성
         val prompt1min = Prompt(listOf(UserMessage(upbitPrompt.createInvestmentPrompt(1,300) + upbit1minData)))
@@ -71,7 +72,7 @@ class InvestService(
                 candleIntervalMinutes = response.candleIntervalMinutes,
                 candleCount = response.candleCount
             )
-            investmentRepository.save(investment)
+            investmentRepository.save(investment).awaitSingle()
             logger.info("예측 결과: $response")
             if (response.decision == "BUY") {
                 buyCount++

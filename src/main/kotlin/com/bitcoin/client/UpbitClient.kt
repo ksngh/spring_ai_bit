@@ -57,11 +57,11 @@ class UpbitClient {
             .awaitSingle()
     }
 
-    suspend fun getCurrentData() : UpbitCurrentPriceResponse {
+    suspend fun getCurrentData() : List<UpbitCurrentPriceResponse> {
         return webClient.get()
             .uri("/v1/ticker?markets=KRW-BTC")
             .retrieve()
-            .bodyToTypedMono<UpbitCurrentPriceResponse>()
+            .bodyToTypedMono<List<UpbitCurrentPriceResponse>>()
             .awaitSingle()
     }
 
