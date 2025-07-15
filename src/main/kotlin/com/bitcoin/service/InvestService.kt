@@ -37,18 +37,19 @@ class InvestService(
         val marketCode = MarketCode.BITCOIN
 
         // 1. 캔들 데이터 수집
-        val upbit1minData = upbitClient.getCurrentMinutesData(marketCode,1,300)
+        val upbit1minData = upbitClient.getCurrentMinutesData(marketCode,1,120)
         val upbit5minData = upbitClient.getCurrentMinutesData(marketCode,5,60)
         val upbit10minData = upbitClient.getCurrentMinutesData(marketCode,10,30)
 
-        val currentPrice = upbitClient.getCurrentData().first()
+        val currentPrice = upbitClient.getCurrentData()
+        logger.info { "Current price: $currentPrice" }
         val investmentActualLog = InvestmentActualLog(
-            actualPrice = currentPrice.tradePrice
+            actualPrice = currentPrice.first().tradePrice
         )
         investmentActualLogRepository.save(investmentActualLog).awaitSingle()
 
         // 2. 프롬프트 생성
-        val prompt1min = Prompt(listOf(UserMessage(upbitPrompt.createInvestmentPrompt(1,300) + upbit1minData)))
+        val prompt1min = Prompt(listOf(UserMessage(upbitPrompt.createInvestmentPrompt(1,120) + upbit1minData)))
         val prompt5min = Prompt(listOf(UserMessage(upbitPrompt.createInvestmentPrompt(5,60) + upbit5minData)))
         val prompt10min = Prompt(listOf(UserMessage(upbitPrompt.createInvestmentPrompt(10,30) + upbit10minData)))
 

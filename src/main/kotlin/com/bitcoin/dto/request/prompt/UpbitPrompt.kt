@@ -9,6 +9,8 @@ class UpbitPrompt {
     fun createInvestmentPrompt(candleIntervalMinutes: Int, candleCount: Int): String {
         return """
             너는 금융 데이터를 분석하여 단기 투자 판단을 내리는 전문가야.
+            
+            매우 논리적으로 판단을 내렸으면 좋겠어
 
             내가 제공하는 데이터는 ${candleIntervalMinutes}분봉 기준의 시세 정보이며, 총 ${candleCount}개의 캔들이야.
 
@@ -24,7 +26,7 @@ class UpbitPrompt {
               "decision": "BUY 또는 SELL",
               "predicted": 예측되는 10분 뒤 가격 (정수, 원 단위),
               "confidence": 0.0 ~ 1.0 사이의 소수 (예측 판단의 확신도),
-              "reason": "당신이 BUY 또는 SELL을 선택한 이유를 간단하게 설명 (100자 내외)",
+              "reason": "당신이 BUY 또는 SELL을 선택한 이유를 지표를 예시로 논리적으로 설명 꼭 보조지표를 예를 들어야해 (100자 내외)",
               "candleIntervalMinutes": ${candleIntervalMinutes},
               "candleCount": ${candleCount}
             }

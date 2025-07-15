@@ -1,7 +1,9 @@
 package com.bitcoin.dto.response
 
+import com.fasterxml.jackson.annotation.JsonProperty
+
 data class UpbitCurrentPriceResponse(
     val market: String,
-    val tradePrice: Long,
+    @JsonProperty("trade_price") val tradePrice: Long,
     val timestamp: Long
 )
