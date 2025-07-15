@@ -4,6 +4,7 @@ import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import com.bitcoin.dto.response.UpbitAccountResponse
 import com.bitcoin.dto.response.UpbitCandleResponse
+import com.bitcoin.dto.response.UpbitCurrentPriceResponse
 import com.bitcoin.enums.MarketCode
 import kotlinx.coroutines.reactor.awaitSingle
 import mu.KotlinLogging
@@ -44,27 +45,23 @@ class UpbitClient {
         .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
         .build()
 
-    suspend fun getCurrent1MinutesData(marketCode: MarketCode): List<UpbitCandleResponse> {
+    suspend fun getCurrentMinutesData(
+        marketCode: MarketCode,
+        candleIntervalMinutes: Int,
+        candleCount: Int
+    ): List<UpbitCandleResponse> {
         return webClient.get()
-            .uri("/v1/candles/minutes/1?market=" + marketCode.ticker + "&count=300")
+            .uri("/v1/candles/minutes/$candleIntervalMinutes?market=${marketCode.ticker}&count=$candleCount")
             .retrieve()
             .bodyToTypedMono<List<UpbitCandleResponse>>()
             .awaitSingle()
     }
 
-    suspend fun getCurrent5MinutesData(marketCode: MarketCode): List<UpbitCandleResponse> {
+    suspend fun getCurrentData() : UpbitCurrentPriceResponse {
         return webClient.get()
-            .uri("/v1/candles/minutes/5?market=" + marketCode.ticker + "&count=60")
+            .uri("/v1/ticker?markets=KRW-BTC")
             .retrieve()
-            .bodyToTypedMono<List<UpbitCandleResponse>>()
-            .awaitSingle()
-    }
-
-    suspend fun getCurrent10MinutesData(marketCode: MarketCode): List<UpbitCandleResponse> {
-        return webClient.get()
-            .uri("/v1/candles/minutes/10?market=" + marketCode.ticker + "&count=30")
-            .retrieve()
-            .bodyToTypedMono<List<UpbitCandleResponse>>()
+            .bodyToTypedMono<UpbitCurrentPriceResponse>()
             .awaitSingle()
     }
 
@@ -92,7 +89,7 @@ class UpbitClient {
         val price = flooredPrice.stripTrailingZeros().toPlainString()
 
         val params = mapOf(
-            "market" to MarketCode.CHRONOS.ticker,
+            "market" to MarketCode.BITCOIN.ticker,
             "ord_type" to "price",
             "price" to price,
             "side" to "bid"
@@ -129,7 +126,7 @@ class UpbitClient {
 
     suspend fun sellAllBtc(): String {
         val params = linkedMapOf(
-            "market" to MarketCode.CHRONOS.ticker,
+            "market" to MarketCode.BITCOIN.ticker,
             "ord_type" to "market",        // 시장가
             "side" to "ask",               // 매도
             "volume" to getAvailableBtc()  // 보유 BTC 전부
@@ -176,7 +173,7 @@ class UpbitClient {
             .bodyToMono<List<UpbitAccountResponse>>()
             .awaitSingle()
         logger.info(response.find { it.currency == "KRW" }?.balance ?: "0.0")
-        return response.find { it.currency == "CRO" }?.balance ?: "0.0"
+        return response.find { it.currency == "BTC" }?.balance ?: "0.0"
     }
 
     fun makeUpbitAuthHeader(params: Map<String, String>): Map<String, String> {
